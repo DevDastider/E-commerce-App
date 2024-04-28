@@ -48,6 +48,7 @@ public class UserService {
 		Set<Role> adminRoles = new HashSet<>();
 		adminRoles.add(adminRole);
 		user.setRole(adminRoles);
+		user.setUserPassword(getEncryptedPassword(user.getUserPassword()));
 		return userDao.save(user);
 	}
 	
