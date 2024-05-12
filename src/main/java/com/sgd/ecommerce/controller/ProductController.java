@@ -49,6 +49,7 @@ public class ProductController {
 		return productService.addNewProduct(product);
 	}
 	
+	@PreAuthorize("hasRole('admin')")
 	@GetMapping({"/getAllProducts"})
 	public List<Product> getAllProducts(){
 		return productService.getProductList();
@@ -58,6 +59,12 @@ public class ProductController {
 	@DeleteMapping({"/deleteProductDetails/{productId}"})
 	public void deleteProductDetails(@PathVariable("productId") Integer productId) {
 		productService.deleteProductDetails(productId);
+	}
+	
+	@PreAuthorize("hasRole('admin')")
+	@GetMapping({"/getProductDetailsById/{productId}"})
+	public Product getProductDetailsById(@PathVariable("productId")Integer productNumber) {
+		return productService.getProductDetailsByNumber(productNumber);
 	}
 	
 	public Set<ImageModel> uploadImage(MultipartFile[] multipartFiles) throws IOException{
