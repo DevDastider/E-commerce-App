@@ -3,6 +3,8 @@
  */
 package com.sgd.ecommerce.service;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -22,5 +24,13 @@ public class ProductService {
 	
 	public Product addNewProduct(Product product) {
 		return productDao.save(product);
+	}
+	
+	public List<Product> getProductList() {
+		return (List<Product>) productDao.findAll();
+	}
+	
+	public void deleteProductDetails(Integer id) {
+		productDao.deleteById(id);
 	}
 }
