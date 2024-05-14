@@ -49,7 +49,6 @@ public class ProductController {
 		return productService.addNewProduct(product);
 	}
 	
-	@PreAuthorize("hasRole('admin')")
 	@GetMapping({"/getAllProducts"})
 	public List<Product> getAllProducts(){
 		return productService.getProductList();
@@ -61,7 +60,6 @@ public class ProductController {
 		productService.deleteProductDetails(productId);
 	}
 	
-	@PreAuthorize("hasRole('admin')")
 	@GetMapping({"/getProductDetailsById/{productId}"})
 	public Product getProductDetailsById(@PathVariable("productId")Integer productNumber) {
 		return productService.getProductDetailsByNumber(productNumber);

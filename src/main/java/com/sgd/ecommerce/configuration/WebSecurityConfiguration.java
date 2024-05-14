@@ -55,7 +55,8 @@ public class WebSecurityConfiguration {
 	public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
 		httpSecurity.cors();
 		httpSecurity.csrf(c-> c.disable())
-					.authorizeRequests().requestMatchers("/authenticate", "/registerNewUser").permitAll()
+					.authorizeRequests()
+					.requestMatchers("/authenticate", "/registerNewUser", "/getAllProducts","/getProductDetailsById/{productId}").permitAll()
 					.requestMatchers(HttpHeaders.ALLOW).permitAll()
 					.anyRequest().authenticated()
 					.and()
