@@ -17,5 +17,6 @@ public class Constants {
 	public static final String UNAUTHORIZED_MSG = "Unauthorized";
 	public static final String AUTHORIZATION = "Authorization";
 	public static final String BEARER = "Bearer ";
+	public static final String ORDER_PLACED = "PLACED"; 
 
 }
