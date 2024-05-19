@@ -65,6 +65,13 @@ public class ProductController {
 		return productService.getProductDetailsByNumber(productNumber);
 	}
 	
+	@PreAuthorize("hasRole('user')")
+	@GetMapping({"/getProductDetails/{isSingleProductCheckout}/{productId}"})
+	public List<Product> getProductDetails(@PathVariable(name= "isSingleProductCheckout")boolean isSingleProductCheckout,
+			@PathVariable(name = "productId")Integer productId){
+		return productService.getProductDetails(isSingleProductCheckout, productId);
+	}
+	
 	public Set<ImageModel> uploadImage(MultipartFile[] multipartFiles) throws IOException{
 		Set<ImageModel> images = new HashSet<>();
 		

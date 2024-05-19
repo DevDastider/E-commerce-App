@@ -3,6 +3,7 @@
  */
 package com.sgd.ecommerce.service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,5 +37,18 @@ public class ProductService {
 
 	public Product getProductDetailsByNumber(Integer productNumber) {
 		return productDao.findById(productNumber).get();
+	}
+
+	/**
+	 * @param productId 
+	 * @param isSingleProductCheckout 
+	 * @return
+	 */
+	public List<Product> getProductDetails(boolean isSingleProductCheckout, Integer productId) {
+		List<Product> productList = new ArrayList<>();
+		if(isSingleProductCheckout) {
+			productList.add(productDao.findById(productId).get());
+		}
+		return productList;
 	}
 }
