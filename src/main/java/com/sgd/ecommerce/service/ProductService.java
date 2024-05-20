@@ -29,9 +29,14 @@ public class ProductService {
 		return productDao.save(product);
 	}
 	
-	public List<Product> getProductList(int pageNumber) {
+	public List<Product> getProductList(int pageNumber, String searchKey) {
 		Pageable pageable = PageRequest.of(pageNumber, 10);
-		return (List<Product>) productDao.findAll(pageable);
+		if ("".equals(searchKey)) {
+			return (List<Product>) productDao.findAll(pageable);
+		} else {
+			return productDao.findByProductNameContainingIgnoreOrProductDescriptionContainingIgnore(searchKey,
+					searchKey, pageable);
+		}
 	}
 	
 	public void deleteProductDetails(Integer id) {

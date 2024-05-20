@@ -51,8 +51,9 @@ public class ProductController {
 	}
 	
 	@GetMapping({"/getAllProducts"})
-	public List<Product> getAllProducts(@RequestParam(defaultValue = "0") Integer pageNumber){
-		return productService.getProductList(pageNumber);
+	public List<Product> getAllProducts(@RequestParam(defaultValue = "0") Integer pageNumber,
+										@RequestParam(defaultValue = "") String searchKey){
+		return productService.getProductList(pageNumber, searchKey);
 	}
 	
 	@PreAuthorize("hasRole('admin')")
