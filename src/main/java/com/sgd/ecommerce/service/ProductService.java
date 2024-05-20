@@ -34,7 +34,7 @@ public class ProductService {
 		if ("".equals(searchKey)) {
 			return (List<Product>) productDao.findAll(pageable);
 		} else {
-			return productDao.findByProductNameContainingIgnoreOrProductDescriptionContainingIgnore(searchKey,
+			return productDao.findByProductNameContainingIgnoreCaseOrProductDescriptionContainingIgnoreCase(searchKey,
 					searchKey, pageable);
 		}
 	}
