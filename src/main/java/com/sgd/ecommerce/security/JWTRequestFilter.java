@@ -35,6 +35,8 @@ public class JWTRequestFilter extends OncePerRequestFilter {
 
 	@Autowired
 	private JWTService jwtService;
+	
+	public static String CURRENT_USER = "";
 
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -50,6 +52,7 @@ public class JWTRequestFilter extends OncePerRequestFilter {
 			try {
 				System.out.println("jwtToken= "+jwtToken);
 				username = jwtAuthenticationHelper.getUserNameFromToken(jwtToken);
+				CURRENT_USER = username;
 			} catch (IllegalArgumentException ex) {
 				System.out.println("Unable to get JWT token");
 				System.out.println(ex);

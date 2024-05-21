@@ -3,9 +3,12 @@
  */
 package com.sgd.ecommerce.service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import com.sgd.ecommerce.dao.ProductDao;
@@ -26,8 +29,14 @@ public class ProductService {
 		return productDao.save(product);
 	}
 	
-	public List<Product> getProductList() {
-		return (List<Product>) productDao.findAll();
+	public List<Product> getProductList(int pageNumber, String searchKey) {
+		Pageable pageable = PageRequest.of(pageNumber, 10);
+		if ("".equals(searchKey)) {
+			return (List<Product>) productDao.findAll(pageable);
+		} else {
+			return productDao.findByProductNameContainingIgnoreCaseOrProductDescriptionContainingIgnoreCase(searchKey,
+					searchKey, pageable);
+		}
 	}
 	
 	public void deleteProductDetails(Integer id) {
@@ -36,5 +45,18 @@ public class ProductService {
 
 	public Product getProductDetailsByNumber(Integer productNumber) {
 		return productDao.findById(productNumber).get();
+	}
+
+	/**
+	 * @param productId 
+	 * @param isSingleProductCheckout 
+	 * @return
+	 */
+	public List<Product> getProductDetails(boolean isSingleProductCheckout, Integer productId) {
+		List<Product> productList = new ArrayList<>();
+		if(isSingleProductCheckout) {
+			productList.add(productDao.findById(productId).get());
+		}
+		return productList;
 	}
 }
