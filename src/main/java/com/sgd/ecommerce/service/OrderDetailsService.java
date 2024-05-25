@@ -8,9 +8,11 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.sgd.ecommerce.dao.CartDao;
 import com.sgd.ecommerce.dao.OrderDetailsDao;
 import com.sgd.ecommerce.dao.ProductDao;
 import com.sgd.ecommerce.dao.UserDao;
+import com.sgd.ecommerce.model.Cart;
 import com.sgd.ecommerce.model.OrderDetails;
 import com.sgd.ecommerce.model.OrderInput;
 import com.sgd.ecommerce.model.OrderProductQuantity;
@@ -36,10 +38,13 @@ public class OrderDetailsService {
 	@Autowired
 	private UserDao userDao;
 	
+	@Autowired
+	private CartDao cartDao;
+	
 	/**
 	 * @param orderInput
 	 */
-	public void placeOrder(OrderInput orderInput) {
+	public void placeOrder(OrderInput orderInput, boolean isCartCheckout) {
 		List<OrderProductQuantity> productQuantityList = orderInput.getOrderProductQuantityList();
 		for(OrderProductQuantity orderedProduct: productQuantityList) {
 			Product product = productDao.findById(orderedProduct.getProductNumber()).get();
@@ -56,6 +61,12 @@ public class OrderDetailsService {
 					product,
 					user
 					);
+			
+			if (isCartCheckout) {
+				List<Cart> cartList = cartDao.findByUser(user);
+				cartList.stream().forEach(cart-> cartDao.deleteById(cart.getId()));
+			}
+			
 			orderDetailsDao.save(orderDetails);
 		}
 	}
