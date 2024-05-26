@@ -71,4 +71,9 @@ public class OrderDetailsService {
 		}
 	}
 
+	public List<OrderDetails> getOrderDetails() {
+		String currentUser = JWTRequestFilter.CURRENT_USER;
+		User user = userDao.findById(currentUser).get();
+		return orderDetailsDao.findByUser(user);
+	}
 }
