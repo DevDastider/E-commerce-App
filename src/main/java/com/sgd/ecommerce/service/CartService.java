@@ -4,6 +4,7 @@
 package com.sgd.ecommerce.service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -44,14 +45,22 @@ public class CartService {
 			user = userDao.findById(username).get();
 		}
 
+		List<Cart> cartList = cartDao.findByUser(user);
+		List<Cart> duplicateList = cartList.stream().filter(cart -> cart.getProduct().getProductNumber() == productId)
+				.collect(Collectors.toList());
+		
+		if (duplicateList.size() > 0) {
+			return null;
+		}
+
 		if (product != null && user != null) {
 			Cart cart = new Cart(product, user);
 			return cartDao.save(cart);
 		}
 		return null;
 	}
-	
-	public List<Cart> getCartDetails(){
+
+	public List<Cart> getCartDetails() {
 		String username = JWTRequestFilter.CURRENT_USER;
 		User user = userDao.findById(username).get();
 		return cartDao.findByUser(user);
