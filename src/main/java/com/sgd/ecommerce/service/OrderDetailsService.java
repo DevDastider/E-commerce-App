@@ -76,4 +76,8 @@ public class OrderDetailsService {
 		User user = userDao.findById(currentUser).get();
 		return orderDetailsDao.findByUser(user);
 	}
+
+	public List<OrderDetails> getAllOrderDetails() {
+		return (List<OrderDetails>) orderDetailsDao.findAll();
+	}
 }
