@@ -80,4 +80,15 @@ public class OrderDetailsService {
 	public List<OrderDetails> getAllOrderDetails() {
 		return (List<OrderDetails>) orderDetailsDao.findAll();
 	}
+
+	/**
+	 * @param orderId
+	 */
+	public void markOrderDelivered(Integer orderId) {
+		OrderDetails order = orderDetailsDao.findById(orderId).get();
+		if (order != null) {
+			order.setOrderStatus(Constants.ORDER_DELIVERED);
+			orderDetailsDao.save(order);
+		}
+	}
 }
