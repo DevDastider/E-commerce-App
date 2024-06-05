@@ -77,8 +77,12 @@ public class OrderDetailsService {
 		return orderDetailsDao.findByUser(user);
 	}
 
-	public List<OrderDetails> getAllOrderDetails() {
-		return (List<OrderDetails>) orderDetailsDao.findAll();
+	public List<OrderDetails> getAllOrderDetails(String status) {
+		if ("ALL".equalsIgnoreCase(status)) {
+			return (List<OrderDetails>) orderDetailsDao.findAll();
+		} else {
+			return orderDetailsDao.findByOrderStatus(status);
+		}
 	}
 
 	/**

@@ -20,4 +20,6 @@ import com.sgd.ecommerce.model.User;
 public interface OrderDetailsDao extends CrudRepository<OrderDetails, Integer> {
 
 	public List<OrderDetails> findByUser(User user);
+	
+	public List<OrderDetails> findByOrderStatus(String status);
 }
