@@ -4,10 +4,11 @@
 package com.sgd.ecommerce.model;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.OneToOne;
+import jakarta.persistence.ManyToOne;
 
 /**
  *
@@ -21,17 +22,22 @@ public class OrderDetails {
 	@GeneratedValue(strategy = GenerationType.AUTO)
 	private Integer orderId;
 	private String orderFullName;
-	private String orderFullOrder;
+	private String fullAddress;
 	private String orderContactNumber;
 	private String orderAlternateContactNumber;
 	private String orderStatus;
 	private Double orderAmount;
-	@OneToOne
+	@ManyToOne(fetch = FetchType.EAGER)
 	private Product product;
-	@OneToOne
+	@ManyToOne(fetch = FetchType.EAGER)
 	private User user;
 	
 	
+	/**
+	 * Default Constructor
+	 */
+	public OrderDetails() {}
+
 	/**
 	 * @param orderFullName
 	 * @param orderFullOrder
@@ -45,7 +51,7 @@ public class OrderDetails {
 	public OrderDetails(String orderFullName, String orderFullOrder, String orderContactNumber,
 			String orderAlternateContactNumber, String orderStatus, Double orderAmount, Product product, User user) {
 		this.orderFullName = orderFullName;
-		this.orderFullOrder = orderFullOrder;
+		this.fullAddress = orderFullOrder;
 		this.orderContactNumber = orderContactNumber;
 		this.orderAlternateContactNumber = orderAlternateContactNumber;
 		this.orderStatus = orderStatus;
@@ -70,12 +76,12 @@ public class OrderDetails {
 		this.orderFullName = orderFullName;
 	}
 
-	public String getOrderFullOrder() {
-		return orderFullOrder;
+	public String getFullAddress() {
+		return fullAddress;
 	}
 
-	public void setOrderFullOrder(String orderFullOrder) {
-		this.orderFullOrder = orderFullOrder;
+	public void setFullAddress(String fullAddress) {
+		this.fullAddress = fullAddress;
 	}
 
 	public String getOrderContactNumber() {
@@ -109,7 +115,21 @@ public class OrderDetails {
 	public void setOrderAmount(Double orderAmount) {
 		this.orderAmount = orderAmount;
 	}
-	
-	
+
+	public Product getProduct() {
+		return product;
+	}
+
+	public void setProduct(Product product) {
+		this.product = product;
+	}
+
+	public User getUser() {
+		return user;
+	}
+
+	public void setUser(User user) {
+		this.user = user;
+	}
 	
 }

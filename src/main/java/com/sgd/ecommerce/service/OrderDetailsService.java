@@ -71,4 +71,28 @@ public class OrderDetailsService {
 		}
 	}
 
+	public List<OrderDetails> getOrderDetails() {
+		String currentUser = JWTRequestFilter.CURRENT_USER;
+		User user = userDao.findById(currentUser).get();
+		return orderDetailsDao.findByUser(user);
+	}
+
+	public List<OrderDetails> getAllOrderDetails(String status) {
+		if ("ALL".equalsIgnoreCase(status)) {
+			return (List<OrderDetails>) orderDetailsDao.findAll();
+		} else {
+			return orderDetailsDao.findByOrderStatus(status);
+		}
+	}
+
+	/**
+	 * @param orderId
+	 */
+	public void markOrderDelivered(Integer orderId) {
+		OrderDetails order = orderDetailsDao.findById(orderId).get();
+		if (order != null) {
+			order.setOrderStatus(Constants.ORDER_DELIVERED);
+			orderDetailsDao.save(order);
+		}
+	}
 }
