@@ -5,9 +5,13 @@ package com.sgd.ecommerce.service;
 
 import java.util.List;
 
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.razorpay.Order;
+import com.razorpay.RazorpayClient;
+import com.razorpay.RazorpayException;
 import com.sgd.ecommerce.dao.CartDao;
 import com.sgd.ecommerce.dao.OrderDetailsDao;
 import com.sgd.ecommerce.dao.ProductDao;
@@ -17,6 +21,7 @@ import com.sgd.ecommerce.model.OrderDetails;
 import com.sgd.ecommerce.model.OrderInput;
 import com.sgd.ecommerce.model.OrderProductQuantity;
 import com.sgd.ecommerce.model.Product;
+import com.sgd.ecommerce.model.TransactionDetail;
 import com.sgd.ecommerce.model.User;
 import com.sgd.ecommerce.security.JWTRequestFilter;
 import com.sgd.ecommerce.util.Constants;
@@ -41,6 +46,20 @@ public class OrderDetailsService {
 	@Autowired
 	private CartDao cartDao;
 	
+	private static final String API_KEY = System.getenv("API_KEY");
+	private static final String SECRET_KEY = System.getenv("SECRET_KEY");
+	private static final String CURRENCY = "INR";
+	private static RazorpayClient paymentClient = null;
+	
+	static {
+		try {
+			paymentClient = new RazorpayClient(API_KEY, SECRET_KEY, true);
+		} catch (RazorpayException e) {
+			e.printStackTrace();
+			throw new RuntimeException("Exception occurred during payment client creation");
+		}
+	}
+	
 	/**
 	 * @param orderInput
 	 */
@@ -59,7 +78,8 @@ public class OrderDetailsService {
 					Constants.ORDER_PLACED,
 					product.getProductDiscountedPrice()*orderedProduct.getProductQuantity(),
 					product,
-					user
+					user,
+					orderInput.getTransactionId()
 					);
 			
 			if (isCartCheckout) {
@@ -94,5 +114,34 @@ public class OrderDetailsService {
 			order.setOrderStatus(Constants.ORDER_DELIVERED);
 			orderDetailsDao.save(order);
 		}
+	}
+	
+	/**
+	 * create payment order which is first part of payment transaction
+	 * @param amount
+	 * @return
+	 */
+	public TransactionDetail createPaymentTransaction(final double amount) {
+		JSONObject jsonObject = new JSONObject();
+		jsonObject.put("amount", (amount*100));
+		jsonObject.put("currency", CURRENCY);
+		TransactionDetail transactionDetail = null;
+		
+		try {
+			Order createdOrder = paymentClient.orders.create(jsonObject);
+			transactionDetail = prepareTransactionDetails(createdOrder);
+		} catch (RazorpayException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return transactionDetail;
+	}
+
+	/**
+	 * @param createdOrder
+	 * @return 
+	 */
+	private static TransactionDetail prepareTransactionDetails(final Order order) {
+		return new TransactionDetail(order.get("id"), order.get("amount"), order.get("currency"), API_KEY);
 	}
 }

@@ -31,6 +31,7 @@ public class OrderDetails {
 	private Product product;
 	@ManyToOne(fetch = FetchType.EAGER)
 	private User user;
+	private String transactionId;
 	
 	
 	/**
@@ -49,7 +50,7 @@ public class OrderDetails {
 	 * @param user
 	 */
 	public OrderDetails(String orderFullName, String orderFullOrder, String orderContactNumber,
-			String orderAlternateContactNumber, String orderStatus, Double orderAmount, Product product, User user) {
+			String orderAlternateContactNumber, String orderStatus, Double orderAmount, Product product, User user, String transactionId) {
 		this.orderFullName = orderFullName;
 		this.fullAddress = orderFullOrder;
 		this.orderContactNumber = orderContactNumber;
@@ -58,6 +59,7 @@ public class OrderDetails {
 		this.orderAmount = orderAmount;
 		this.product = product;
 		this.user = user;
+		this.transactionId = transactionId;
 	}
 
 	public Integer getOrderId() {
@@ -130,6 +132,14 @@ public class OrderDetails {
 
 	public void setUser(User user) {
 		this.user = user;
+	}
+
+	public String getTransactionId() {
+		return transactionId;
+	}
+
+	public void setTransactionId(String transactionId) {
+		this.transactionId = transactionId;
 	}
 	
 }

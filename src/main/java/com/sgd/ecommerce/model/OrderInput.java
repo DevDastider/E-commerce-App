@@ -16,6 +16,7 @@ public class OrderInput {
 	private String fullAddress;
 	private String contactNumber;
 	private String alternateContactNumber;
+	private String transactionId;
 	private List<OrderProductQuantity> orderProductQuantityList;
 
 	public String getFullName() {
@@ -56,6 +57,14 @@ public class OrderInput {
 
 	public void setOrderProductQuantityList(List<OrderProductQuantity> orderProductQuantityList) {
 		this.orderProductQuantityList = orderProductQuantityList;
+	}
+
+	public String getTransactionId() {
+		return transactionId;
+	}
+
+	public void setTransactionId(String transactionId) {
+		this.transactionId = transactionId;
 	}
 	
 	
