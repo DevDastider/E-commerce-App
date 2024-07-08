@@ -9,6 +9,7 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import com.razorpay.Order;
@@ -48,21 +49,24 @@ public class OrderDetailsService {
 	@Autowired
 	private CartDao cartDao;
 	
+	@Autowired
+	@Qualifier(value = "paymentClient")
+	private RazorpayClient paymentClient;
+	
 	private static final String API_KEY = System.getenv("API_KEY");
-	private static final String SECRET_KEY = System.getenv("SECRET_KEY");
+//	private static final String SECRET_KEY = System.getenv("SECRET_KEY");
 	private static final String CURRENCY = "INR";
-	private static RazorpayClient paymentClient = null;
 	private static final Logger LOGGER = LoggerFactory.getLogger(OrderDetailsService.class);
 	
-	static {
-		try {
-			paymentClient = new RazorpayClient(API_KEY, SECRET_KEY, true);
-		} catch (RazorpayException e) {
-			LOGGER.error("Exception occurred during payment client creation");
-			e.printStackTrace();
-			throw new RuntimeException("Exception occurred during payment client creation");
-		}
-	}
+//	static {
+//		try {
+//			paymentClient = new RazorpayClient(API_KEY, SECRET_KEY, true);
+//		} catch (RazorpayException e) {
+//			LOGGER.error("Exception occurred during payment client creation");
+//			e.printStackTrace();
+//			throw new RuntimeException("Exception occurred during payment client creation");
+//		}
+//	}
 	
 	/**
 	 * @param orderInput
