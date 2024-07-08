@@ -6,6 +6,8 @@ package com.sgd.ecommerce.service;
 import java.util.List;
 
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -50,11 +52,13 @@ public class OrderDetailsService {
 	private static final String SECRET_KEY = System.getenv("SECRET_KEY");
 	private static final String CURRENCY = "INR";
 	private static RazorpayClient paymentClient = null;
+	private static final Logger LOGGER = LoggerFactory.getLogger(OrderDetailsService.class);
 	
 	static {
 		try {
 			paymentClient = new RazorpayClient(API_KEY, SECRET_KEY, true);
 		} catch (RazorpayException e) {
+			LOGGER.error("Exception occurred during payment client creation");
 			e.printStackTrace();
 			throw new RuntimeException("Exception occurred during payment client creation");
 		}
@@ -83,6 +87,7 @@ public class OrderDetailsService {
 					);
 			
 			if (isCartCheckout) {
+				LOGGER.debug("Deleting cart details");
 				List<Cart> cartList = cartDao.findByUser(user);
 				cartList.stream().forEach(cart-> cartDao.deleteById(cart.getId()));
 			}
@@ -131,7 +136,7 @@ public class OrderDetailsService {
 			Order createdOrder = paymentClient.orders.create(jsonObject);
 			transactionDetail = prepareTransactionDetails(createdOrder);
 		} catch (RazorpayException e) {
-			// TODO Auto-generated catch block
+			LOGGER.error("Exception occurred during payment order creation");
 			e.printStackTrace();
 		}
 		return transactionDetail;
@@ -142,6 +147,7 @@ public class OrderDetailsService {
 	 * @return 
 	 */
 	private static TransactionDetail prepareTransactionDetails(final Order order) {
+		LOGGER.debug("Transaction detail object created to return to front end");
 		return new TransactionDetail(order.get("id"), order.get("amount"), order.get("currency"), API_KEY);
 	}
 }
