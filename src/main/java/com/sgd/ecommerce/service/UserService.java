@@ -6,6 +6,8 @@ package com.sgd.ecommerce.service;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -29,6 +31,8 @@ public class UserService {
 	
 	@Autowired
 	private PasswordEncoder passwordEncoder;
+	
+	private static Logger LOGGER = LoggerFactory.getLogger(UserService.class);
 
 	public User registerNewUser(final User user) {
 		Role userRole = new Role();
@@ -53,6 +57,7 @@ public class UserService {
 	}
 	
 	private String getEncryptedPassword(String password) {
+		LOGGER.debug("Encrypting password");
 		return passwordEncoder.encode(password);
 	}
 }

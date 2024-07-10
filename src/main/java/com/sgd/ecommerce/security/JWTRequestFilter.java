@@ -5,6 +5,8 @@ package com.sgd.ecommerce.security;
 
 import java.io.IOException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -36,6 +38,7 @@ public class JWTRequestFilter extends OncePerRequestFilter {
 	@Autowired
 	private JWTService jwtService;
 	
+	private static Logger LOGGER = LoggerFactory.getLogger(JWTRequestFilter.class);
 	public static String CURRENT_USER = "";
 
 	@Override
@@ -50,18 +53,17 @@ public class JWTRequestFilter extends OncePerRequestFilter {
 			jwtToken = authorizationHeader.substring(7);
 
 			try {
-				System.out.println("jwtToken= "+jwtToken);
+				LOGGER.debug("jwtToken= "+jwtToken);
 				username = jwtAuthenticationHelper.getUserNameFromToken(jwtToken);
 				CURRENT_USER = username;
 			} catch (IllegalArgumentException ex) {
-				System.out.println("Unable to get JWT token");
-				System.out.println(ex);
+				LOGGER.error("Unable to get JWT token" + ex);
 				ex.printStackTrace();
 			} catch (ExpiredJwtException ex) {
-				System.out.println("JWT token expired");
+				LOGGER.info("JWT token expired");
 			}
 		} else {
-			System.out.println("Required header missing");
+			LOGGER.warn("Authorization header missing");
 		}
 
 		if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {

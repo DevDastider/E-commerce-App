@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.sgd.ecommerce.model.OrderDetails;
 import com.sgd.ecommerce.model.OrderInput;
+import com.sgd.ecommerce.model.TransactionDetail;
 import com.sgd.ecommerce.service.OrderDetailsService;
 
 /**
@@ -53,5 +54,11 @@ public class OrderDetailsController {
 	@GetMapping({ "/orderDelivered/{orderId}" })
 	public void markOrderDelivered(@PathVariable(name = "orderId") Integer orderId) {
 		orderDetailsService.markOrderDelivered(orderId);
+	}
+	
+	@PreAuthorize("hasRole('user')")
+	@GetMapping("/createTransaction/{amount}")
+	public TransactionDetail createTransaction(@PathVariable(name = "amount") Double amount) {
+		return orderDetailsService.createPaymentTransaction(amount);
 	}
 }
