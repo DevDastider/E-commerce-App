@@ -15,6 +15,8 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.sgd.ecommerce.exception.GeneralServiceException;
+import com.sgd.ecommerce.exception.ServiceRuntimeException;
 import com.sgd.ecommerce.service.JWTService;
 import com.sgd.ecommerce.util.Constants;
 
@@ -42,42 +44,44 @@ public class JWTRequestFilter extends OncePerRequestFilter {
 	public static String CURRENT_USER = "";
 
 	@Override
-	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-			throws ServletException, IOException {
+	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) {
 
-		final String authorizationHeader = request.getHeader(Constants.AUTHORIZATION);
-		String jwtToken = null;
-		String username = null;
+		try {
+			final String authorizationHeader = request.getHeader(Constants.AUTHORIZATION);
+			String jwtToken = null;
+			String username = null;
+			if (authorizationHeader != null && authorizationHeader.startsWith(Constants.BEARER)) {
+				jwtToken = authorizationHeader.substring(7);
 
-		if (authorizationHeader != null && authorizationHeader.startsWith(Constants.BEARER)) {
-			jwtToken = authorizationHeader.substring(7);
-
-			try {
-				LOGGER.debug("jwtToken= "+jwtToken);
-				username = jwtAuthenticationHelper.getUserNameFromToken(jwtToken);
-				CURRENT_USER = username;
-			} catch (IllegalArgumentException ex) {
-				LOGGER.error("Unable to get JWT token" + ex);
-				ex.printStackTrace();
-			} catch (ExpiredJwtException ex) {
-				LOGGER.info("JWT token expired");
+				try {
+					username = jwtAuthenticationHelper.getUserNameFromToken(jwtToken);
+					CURRENT_USER = username;
+				} catch (IllegalArgumentException ex) {
+					LOGGER.error("Unable to get JWT token" + ex);
+					throw new ServiceRuntimeException("Error during fetching username from token", ex);
+				} catch (ExpiredJwtException ex) {
+					LOGGER.info("JWT token expired");
+					throw new ServiceRuntimeException("Credentials token expired", ex);
+				}
+			} else {
+				LOGGER.warn("Authorization header missing");
 			}
-		} else {
-			LOGGER.warn("Authorization header missing");
-		}
 
-		if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-			UserDetails userDetails = jwtService.loadUserByUsername(username);
-			if(jwtAuthenticationHelper.validateToken(jwtToken, userDetails)) {
-				UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
-						userDetails, null, userDetails.getAuthorities());
-				usernamePasswordAuthenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-				SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
+			if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+				UserDetails userDetails = jwtService.loadUserByUsername(username);
+				if (jwtAuthenticationHelper.validateToken(jwtToken, userDetails)) {
+					UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
+							userDetails, null, userDetails.getAuthorities());
+					usernamePasswordAuthenticationToken
+							.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+					SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
+				}
 			}
-		}
-		
-		filterChain.doFilter(request, response);
 
+			filterChain.doFilter(request, response);
+		} catch (IOException | ServletException ex) {
+			throw new ServiceRuntimeException("Error occurred during user authentication", ex);
+		}
 	}
 
 }

@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.sgd.ecommerce.exception.GeneralServiceException;
 import com.sgd.ecommerce.model.ImageModel;
 import com.sgd.ecommerce.model.Product;
 import com.sgd.ecommerce.service.ProductService;
@@ -40,12 +41,12 @@ public class ProductController {
 	@PreAuthorize("hasRole('admin')")
 	@PostMapping(value = {"/addProduct"}, consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
 	public Product addNewProduct(@RequestPart("product") Product product,
-								@RequestPart("imageFiles") MultipartFile[] files) {
+								@RequestPart("imageFiles") MultipartFile[] files) throws GeneralServiceException {
 		try {
 			Set<ImageModel> images = uploadImage(files);
 			product.setProductImages(images);
-		} catch(Exception ex) {
-			ex.printStackTrace();
+		} catch(IOException ex) {
+			throw new GeneralServiceException(500, "Error while uploading image", ex);
 		}
 		return productService.addNewProduct(product);
 	}
