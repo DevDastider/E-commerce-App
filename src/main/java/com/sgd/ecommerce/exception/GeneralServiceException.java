@@ -10,6 +10,10 @@ package com.sgd.ecommerce.exception;
  */
 public class GeneralServiceException extends ServiceException {
 
+	public GeneralServiceException(String msg, Exception ex) {
+		super(msg, ex);
+	}
+	
 	/**
 	 * @param i
 	 * @param string
