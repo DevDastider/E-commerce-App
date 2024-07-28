@@ -8,6 +8,7 @@ import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -15,8 +16,10 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sgd.ecommerce.exception.GeneralServiceException;
 import com.sgd.ecommerce.exception.ServiceRuntimeException;
+import com.sgd.ecommerce.model.ErrorResponse;
 import com.sgd.ecommerce.service.JWTService;
 import com.sgd.ecommerce.util.Constants;
 
@@ -44,7 +47,7 @@ public class JWTRequestFilter extends OncePerRequestFilter {
 	public static String CURRENT_USER = "";
 
 	@Override
-	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) {
+	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws IOException {
 
 		try {
 			final String authorizationHeader = request.getHeader(Constants.AUTHORIZATION);
@@ -58,10 +61,12 @@ public class JWTRequestFilter extends OncePerRequestFilter {
 					CURRENT_USER = username;
 				} catch (IllegalArgumentException ex) {
 					LOGGER.error("Unable to get JWT token" + ex);
-					throw new ServiceRuntimeException("Error during fetching username from token", ex);
+					handleException(request, response, new ServiceRuntimeException("Error during fetching username from token", ex),
+							HttpStatus.NOT_FOUND);
 				} catch (ExpiredJwtException ex) {
-					LOGGER.info("JWT token expired");
-					throw new ServiceRuntimeException("Credentials token expired", ex);
+					LOGGER.error("JWT token expired");
+					handleException(request, response, new GeneralServiceException("Credentials token expired", ex),
+							HttpStatus.UNAUTHORIZED);
 				}
 			} else {
 				LOGGER.warn("Authorization header missing");
@@ -79,9 +84,23 @@ public class JWTRequestFilter extends OncePerRequestFilter {
 			}
 
 			filterChain.doFilter(request, response);
-		} catch (IOException | ServletException ex) {
-			throw new ServiceRuntimeException("Error occurred during user authentication", ex);
+		} catch (ServletException ex) {
+			handleException(request, response, ex, HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
 
+	private static void handleException(final HttpServletRequest request, final HttpServletResponse response,
+			final Exception ex, final HttpStatus status) throws IOException {
+		response.setStatus(status.value());
+		response.setContentType("application/json");
+
+		ErrorResponse errorResponse = new ErrorResponse();
+		errorResponse.setErrorMessage(ex.getMessage());
+		errorResponse.setUriPath(((HttpServletRequest) request).getRequestURI());
+
+		ObjectMapper mapper = new ObjectMapper();
+		String jsonResponse = mapper.writeValueAsString(errorResponse);
+
+		response.getWriter().write(jsonResponse);
+	}
 }

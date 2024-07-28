@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.sgd.ecommerce.exception.GeneralServiceException;
 import com.sgd.ecommerce.model.OrderDetails;
 import com.sgd.ecommerce.model.OrderInput;
 import com.sgd.ecommerce.model.TransactionDetail;
@@ -58,7 +59,7 @@ public class OrderDetailsController {
 	
 	@PreAuthorize("hasRole('user')")
 	@GetMapping("/createTransaction/{amount}")
-	public TransactionDetail createTransaction(@PathVariable(name = "amount") Double amount) {
+	public TransactionDetail createTransaction(@PathVariable(name = "amount") Double amount) throws GeneralServiceException {
 		return orderDetailsService.createPaymentTransaction(amount);
 	}
 }
