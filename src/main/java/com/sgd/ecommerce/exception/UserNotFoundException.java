@@ -3,8 +3,6 @@
  */
 package com.sgd.ecommerce.exception;
 
-import org.springframework.security.authentication.BadCredentialsException;
-
 /**
  *
  * @author Sayantan Ghosh Dastider

@@ -19,6 +19,7 @@
 		<!--
 		<sonar.junit.reportPaths>target/surefire-reports</sonar.junit.reportPaths>
     	<sonar.jacoco.reportPaths>target/jacoco.exec</sonar.jacoco.reportPaths> -->
+    	<sonar.coverage.exclusions>**/com/sgd/ecommerce/model/**,**/com/sgd/ecommerce/dao/**,**/com/sgd/ecommerce/util/Constants.java</sonar.coverage.exclusions>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -97,6 +98,7 @@
 			<plugin>
 				<groupId>org.sonarsource.scanner.maven</groupId>
 				<artifactId>sonar-maven-plugin</artifactId>
+			    <version>3.9.1.2184</version>
 			</plugin>
 			<plugin>
 				<groupId>org.jacoco</groupId>
