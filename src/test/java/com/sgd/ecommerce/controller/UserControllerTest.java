@@ -30,6 +30,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sgd.ecommerce.exception.ExceptionHandlerMapping;
 import com.sgd.ecommerce.model.User;
 import com.sgd.ecommerce.security.JWTAuthenticationHelper;
 import com.sgd.ecommerce.service.JWTService;
@@ -53,10 +54,14 @@ public class UserControllerTest {
 	@InjectMocks
 	private UserController userController;
 	
+	@Autowired
+	private ExceptionHandlerMapping exceptionHandlerMapping;
+
 	@BeforeEach
 	public void setup() {
 		MockitoAnnotations.openMocks(this);
-		mockMvc = MockMvcBuilders.standaloneSetup(userController).build();
+		mockMvc = MockMvcBuilders.standaloneSetup(userController)
+				.setControllerAdvice(exceptionHandlerMapping).build();
 	}
 
 	@Test
