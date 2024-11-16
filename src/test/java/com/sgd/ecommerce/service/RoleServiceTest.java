@@ -22,7 +22,6 @@ import com.sgd.ecommerce.model.Role;
  * @author Sayantan Ghosh Dastider
  *
  */
-@SpringBootTest
 public class RoleServiceTest {
 
     @Mock
