@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Profile;
 
 import com.razorpay.RazorpayClient;
 import com.razorpay.RazorpayException;
+import com.sgd.ecommerce.exception.ServiceRuntimeException;
 
 /**
  *
@@ -31,7 +32,7 @@ public class RazorPayConfig {
             return new RazorpayClient(API_KEY, SECRET_KEY, true);
         } catch (RazorpayException e) {
 			LOGGER.error("Exception occurred during payment client creation", e);
-            throw new RuntimeException("Exception occurred during payment client creation", e);
+            throw new ServiceRuntimeException("Exception occurred during payment client creation", e);
         }
 	}
 }

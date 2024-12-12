@@ -19,6 +19,7 @@ import com.sgd.ecommerce.dao.CartDao;
 import com.sgd.ecommerce.dao.OrderDetailsDao;
 import com.sgd.ecommerce.dao.ProductDao;
 import com.sgd.ecommerce.dao.UserDao;
+import com.sgd.ecommerce.exception.GeneralServiceException;
 import com.sgd.ecommerce.model.Cart;
 import com.sgd.ecommerce.model.OrderDetails;
 import com.sgd.ecommerce.model.OrderInput;
@@ -54,19 +55,8 @@ public class OrderDetailsService {
 	private RazorpayClient paymentClient;
 	
 	private static final String API_KEY = System.getenv("API_KEY");
-//	private static final String SECRET_KEY = System.getenv("SECRET_KEY");
 	private static final String CURRENCY = "INR";
 	private static final Logger LOGGER = LoggerFactory.getLogger(OrderDetailsService.class);
-	
-//	static {
-//		try {
-//			paymentClient = new RazorpayClient(API_KEY, SECRET_KEY, true);
-//		} catch (RazorpayException e) {
-//			LOGGER.error("Exception occurred during payment client creation");
-//			e.printStackTrace();
-//			throw new RuntimeException("Exception occurred during payment client creation");
-//		}
-//	}
 	
 	/**
 	 * @param orderInput
@@ -129,8 +119,9 @@ public class OrderDetailsService {
 	 * create payment order which is first part of payment transaction
 	 * @param amount
 	 * @return
+	 * @throws GeneralServiceException 
 	 */
-	public TransactionDetail createPaymentTransaction(final double amount) {
+	public TransactionDetail createPaymentTransaction(final double amount) throws GeneralServiceException {
 		JSONObject jsonObject = new JSONObject();
 		jsonObject.put("amount", (amount*100));
 		jsonObject.put("currency", CURRENCY);
@@ -142,6 +133,7 @@ public class OrderDetailsService {
 		} catch (RazorpayException e) {
 			LOGGER.error("Exception occurred during payment order creation");
 			e.printStackTrace();
+			throw new GeneralServiceException(500, "Exception occurred during payment order creation", e);
 		}
 		return transactionDetail;
 	}
