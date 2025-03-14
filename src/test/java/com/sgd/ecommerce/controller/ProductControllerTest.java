@@ -29,6 +29,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import com.sgd.ecommerce.exception.ExceptionHandlerMapping;
 import com.sgd.ecommerce.model.Product;
 import com.sgd.ecommerce.service.ProductService;
 
@@ -45,7 +46,9 @@ public class ProductControllerTest {
     @BeforeEach
     public void setup() {
         MockitoAnnotations.openMocks(this);
-        mockMvc = MockMvcBuilders.standaloneSetup(productController).build();
+        mockMvc = MockMvcBuilders.standaloneSetup(productController)
+        			.setControllerAdvice(new ExceptionHandlerMapping())
+        			.build();
     }
 
     @Test
@@ -80,7 +83,7 @@ public class ProductControllerTest {
         MockMultipartFile productJson = new MockMultipartFile("product", "", "application/json", "{\"id\":1, \"name\":\"Test Product\"}".getBytes());
         MockMultipartFile imageFile = new MockMultipartFile("imageFiles", "image.jpg", "image/jpeg", new byte[] {});
 
-        doThrow(new IOException("File upload error")).when(productService).addNewProduct(any(Product.class));
+        doThrow(new RuntimeException("File upload error")).when(productService).addNewProduct(any(Product.class));
 
         // Act & Assert
         mockMvc.perform(multipart("/addProduct")
@@ -89,7 +92,7 @@ public class ProductControllerTest {
                 .contentType(MediaType.MULTIPART_FORM_DATA))
                 .andExpect(status().isInternalServerError());
 
-        verify(productService, never()).addNewProduct(any(Product.class));
+        verify(productService, times(1)).addNewProduct(any(Product.class));
     }
 
     @Test

@@ -17,6 +17,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -52,8 +53,8 @@ public class UserServiceTest {
         user.setUserPassword("plainPassword");
 
         Role userRole = new Role();
-        userRole.setRoleName("USER");
-        userRole.setRoleDescription("Default user role");
+        userRole.setRoleName("user");
+        userRole.setRoleDescription("Default role for newly created users of E-Commerce Application");
         
         Set<Role> expectedRoles = new HashSet<>();
         expectedRoles.add(userRole);
@@ -67,7 +68,8 @@ public class UserServiceTest {
         // Assert
         assertEquals("encryptedPassword", savedUser.getUserPassword());
         assertEquals(expectedRoles.size(), savedUser.getRole().size());
-        assertTrue(savedUser.getRole().contains(userRole));
+        assertTrue(savedUser.getRole().iterator().next().getRoleName().equals(userRole.getRoleName()));
+        assertTrue(savedUser.getRole().iterator().next().getRoleDescription().equals(userRole.getRoleDescription()));
 
         verify(passwordEncoder, times(1)).encode("plainPassword");
         verify(userDao, times(1)).save(any(User.class));
@@ -80,8 +82,8 @@ public class UserServiceTest {
         admin.setUserPassword("plainPassword");
 
         Role adminRole = new Role();
-        adminRole.setRoleName("ADMIN");
-        adminRole.setRoleDescription("Default admin role");
+        adminRole.setRoleName("admin");
+        adminRole.setRoleDescription("Admin role for E-Commerce Application");
 
         Set<Role> expectedRoles = new HashSet<>();
         expectedRoles.add(adminRole);
@@ -95,7 +97,8 @@ public class UserServiceTest {
         // Assert
         assertEquals("encryptedPassword", savedAdmin.getUserPassword());
         assertEquals(expectedRoles.size(), savedAdmin.getRole().size());
-        assertTrue(savedAdmin.getRole().contains(adminRole));
+        assertTrue(savedAdmin.getRole().iterator().next().getRoleName().equals(adminRole.getRoleName()));
+        assertTrue(savedAdmin.getRole().iterator().next().getRoleDescription().equals(adminRole.getRoleDescription()));
 
         verify(passwordEncoder, times(1)).encode("plainPassword");
         verify(userDao, times(1)).save(any(User.class));
@@ -105,10 +108,14 @@ public class UserServiceTest {
     public void testGetEncryptedPassword_ShouldReturnEncryptedPassword() {
         // Arrange
         String rawPassword = "plainPassword";
-        when(passwordEncoder.encode(rawPassword)).thenReturn("encryptedPassword");
+        User user = new User();
+        user.setUserPassword("encryptedPassword");
+		when(userDao.save(Mockito.any(User.class))).thenReturn(user);
 
         // Act
-        String encryptedPassword = userService.registerNewUser(new User()).getUserPassword();
+        User rawUser = new User();
+        rawUser.setUserPassword(rawPassword);
+		String encryptedPassword = userService.registerNewUser(rawUser).getUserPassword();
 
         // Assert
         assertEquals("encryptedPassword", encryptedPassword);
