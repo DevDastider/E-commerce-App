@@ -13,19 +13,58 @@ on:
     branches: [ "master" ]
   pull_request:
     branches: [ "master" ]
+  workflow_dispatch:  # Enables manual trigger
 
 jobs:
   build:
 
     runs-on: ubuntu-latest
 
+    services:
+      sonarqube:
+        image: sonarqube:latest
+        ports:
+          - 9000:9000
+        options: >-
+          --health-cmd="curl --silent --fail http://localhost:9000/api/system/health || exit 1"
+          --health-interval=30s
+          --health-timeout=10s
+          --health-retries=3
+
     steps:
     - uses: actions/checkout@v4
+
+    - name: Wait for SonarQube to be ready
+      run: |
+        echo "Waiting for SonarQube to start..."
+        for i in {1..30}; do
+          if curl --silent --fail http://localhost:9000/api/system/status; then
+            echo "SonarQube is up and running!"
+            break
+          fi
+          echo "Waiting for SonarQube..."
+          sleep 10
+        done
+
     - name: Set up JDK 17
       uses: actions/setup-java@v3
       with:
         java-version: '17'
         distribution: 'temurin'
         cache: maven
+
     - name: Build with Maven
       run: mvn -B package --file pom.xml
+
+    - name: SonarQube Scan
+      run: |
+        mvn sonar:sonar \
+          -Dsonar.projectKey=your_project_key \
+          -Dsonar.host.url=http://localhost:9000 \
+          -Dsonar.login=admin \
+          -Dsonar.password=admin
+
+    - name: Fetch SonarQube Coverage
+      run: |
+        COVERAGE=$(curl -s -u admin:admin http://localhost:9000/api/measures/component?component=your_project_key&metricKeys=coverage | jq -r '.component.measures[0].value')
+        echo "SonarQube Coverage: $COVERAGE%"
