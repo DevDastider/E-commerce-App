@@ -29,7 +29,7 @@ jobs:
           --health-cmd="curl --silent --fail http://localhost:9000/api/system/health || exit 1"
           --health-interval=30s
           --health-timeout=10s
-          --health-retries=3
+          --health-retries=10  # Increased retries to give more time for the container to become healthy
 
     steps:
     - uses: actions/checkout@v4
@@ -37,7 +37,7 @@ jobs:
     - name: Wait for SonarQube to be ready
       run: |
         echo "Waiting for SonarQube to start..."
-        for i in {1..30}; do
+        for i in {1..60}; do
           if curl --silent --fail http://localhost:9000/api/system/status; then
             echo "SonarQube is up and running!"
             break
