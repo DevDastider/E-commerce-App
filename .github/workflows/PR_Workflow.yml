@@ -29,7 +29,7 @@ jobs:
           --health-cmd="curl --silent --fail http://localhost:9000/api/system/health || exit 1"
           --health-interval=30s
           --health-timeout=10s
-          --health-retries=10  # Increased retries to give more time for the container to become healthy
+          --health-retries=10
 
     steps:
     - uses: actions/checkout@v4
@@ -37,7 +37,7 @@ jobs:
     - name: Wait for SonarQube to be ready
       run: |
         echo "Waiting for SonarQube to start..."
-        for i in {1..60}; do
+        for i in {1..160}; do
           if curl --silent --fail http://localhost:9000/api/system/status; then
             echo "SonarQube is up and running!"
             break
@@ -59,12 +59,12 @@ jobs:
     - name: SonarQube Scan
       run: |
         mvn sonar:sonar \
-          -Dsonar.projectKey=your_project_key \
+          -Dsonar.projectKey=com.sgd:e-commerce \
           -Dsonar.host.url=http://localhost:9000 \
           -Dsonar.login=admin \
           -Dsonar.password=admin
 
     - name: Fetch SonarQube Coverage
       run: |
-        COVERAGE=$(curl -s -u admin:admin http://localhost:9000/api/measures/component?component=your_project_key&metricKeys=coverage | jq -r '.component.measures[0].value')
+        COVERAGE=$(curl -s -u admin:admin http://localhost:9000/api/measures/component?component=com.sgd:e-commerce&metricKeys=coverage | jq -r '.component.measures[0].value')
         echo "SonarQube Coverage: $COVERAGE%"
