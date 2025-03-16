@@ -48,15 +48,14 @@ jobs:
 
     - name: Wait for SonarQube to be ready
       run: |
-        echo "Waiting for SonarQube to become healthy..."
-        for i in {1..10}; do
-          STATUS=$(docker inspect --format='{{.State.Health.Status}}' $(docker ps -q --filter "name=sonarqube"))
-          echo "Health status: $STATUS"
-          if [ "$STATUS" == "healthy" ]; then
-            echo "SonarQube is healthy."
-            exit 0
-          fi
-          sleep 30
+        echo "Waiting for SonarQube to start..."
+         for i in {1..32}; do
+           if curl --silent --fail http://localhost:9000/api/system/status; then
+             echo "SonarQube is up and running!"
+             break
+           fi
+           echo "Waiting for SonarQube..."
+           sleep 10
         done
         echo "SonarQube did not become healthy, continuing anyway."
 
@@ -70,5 +69,5 @@ jobs:
 
     - name: Fetch SonarQube Coverage
       run: |
-        COVERAGE=$(curl -s -u admin:admin http://localhost:9000/api/measures/component?component=com.sgd:e-commerce&metricKeys=coverage | jq -r '.component.measures[0].value')
+        COVERAGE=$(curl -s -u admin:admin http://localhost:9000/api/measures/component?component=com.sgd%3Ae-commerce&metricKeys=coverage | jq -r '.component.measures[0].value')
         echo "SonarQube Coverage: $COVERAGE%"
