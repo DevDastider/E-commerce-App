@@ -22,7 +22,7 @@ jobs:
 
     services:
       sonarqube:
-        image: sonarqube:latest
+        image: sonarqube:10.6.0-community
         ports:
           - 9000:9000
         options: >-
@@ -39,7 +39,7 @@ jobs:
     - name: Wait for SonarQube to be ready
       run: |
         echo "Waiting for SonarQube to start..."
-        for i in {1..160}; do
+        for i in {1..32}; do
           if curl --silent --fail http://localhost:9000/api/system/status; then
             echo "SonarQube is up and running!"
             break
