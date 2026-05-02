@@ -71,16 +71,28 @@ jobs:
         
         # API endpoint and credentials
         SONAR_URL="http://localhost:9000"
-        PROJECT_KEY="com.sgd:e-commerce"
+        PROJECT_KEY="com.sgd%3Ae-commerce"
         AUTH="-u admin:admin"
+        
+        # Wait for SonarQube to process the analysis
+        echo "Waiting for SonarQube to process the analysis..."
+        sleep 5
         
         # Fetch coverage metrics
         echo ""
         echo "--- Code Coverage ---"
         COVERAGE_RESPONSE=$(curl -s $AUTH "$SONAR_URL/api/measures/component?metricKeys=coverage,new_code_coverage&component=$PROJECT_KEY")
         
-        TOTAL_COVERAGE=$(echo "$COVERAGE_RESPONSE" | jq -r '.component.measures[] | select(.metric=="coverage") | .value // "N/A"')
-        NEW_CODE_COVERAGE=$(echo "$COVERAGE_RESPONSE" | jq -r '.component.measures[] | select(.metric=="new_code_coverage") | .value // "N/A"')
+        if [ -z "$COVERAGE_RESPONSE" ] || [ "$COVERAGE_RESPONSE" == "null" ]; then
+          echo "Warning: No coverage data available yet"
+          TOTAL_COVERAGE="N/A"
+          NEW_CODE_COVERAGE="N/A"
+        else
+          TOTAL_COVERAGE=$(echo "$COVERAGE_RESPONSE" | jq -r '.component.measures[]? | select(.metric=="coverage") | .value // empty' | head -1)
+          NEW_CODE_COVERAGE=$(echo "$COVERAGE_RESPONSE" | jq -r '.component.measures[]? | select(.metric=="new_code_coverage") | .value // empty' | head -1)
+          [ -z "$TOTAL_COVERAGE" ] && TOTAL_COVERAGE="N/A"
+          [ -z "$NEW_CODE_COVERAGE" ] && NEW_CODE_COVERAGE="N/A"
+        fi
         
         echo "Total Code Coverage: ${TOTAL_COVERAGE}%"
         echo "New Code Coverage: ${NEW_CODE_COVERAGE}%"
@@ -90,9 +102,16 @@ jobs:
         echo "--- Vulnerabilities ---"
         ISSUES_RESPONSE=$(curl -s $AUTH "$SONAR_URL/api/issues/search?componentKeys=$PROJECT_KEY&types=VULNERABILITY&ps=500")
         
-        CRITICAL_COUNT=$(echo "$ISSUES_RESPONSE" | jq '[.issues[] | select(.severity=="CRITICAL")] | length')
-        MAJOR_COUNT=$(echo "$ISSUES_RESPONSE" | jq '[.issues[] | select(.severity=="MAJOR")] | length')
-        HIGH_COUNT=$(echo "$ISSUES_RESPONSE" | jq '[.issues[] | select(.severity=="HIGH")] | length')
+        if [ -z "$ISSUES_RESPONSE" ] || [ "$ISSUES_RESPONSE" == "null" ]; then
+          echo "Warning: No vulnerability data available"
+          CRITICAL_COUNT=0
+          MAJOR_COUNT=0
+          HIGH_COUNT=0
+        else
+          CRITICAL_COUNT=$(echo "$ISSUES_RESPONSE" | jq '[.issues[]? | select(.severity=="CRITICAL")] | length' 2>/dev/null || echo 0)
+          MAJOR_COUNT=$(echo "$ISSUES_RESPONSE" | jq '[.issues[]? | select(.severity=="MAJOR")] | length' 2>/dev/null || echo 0)
+          HIGH_COUNT=$(echo "$ISSUES_RESPONSE" | jq '[.issues[]? | select(.severity=="HIGH")] | length' 2>/dev/null || echo 0)
+        fi
         
         echo "Critical Vulnerabilities: $CRITICAL_COUNT"
         echo "Major Vulnerabilities: $MAJOR_COUNT"
@@ -103,10 +122,22 @@ jobs:
         echo "--- Other Quality Metrics ---"
         QUALITY_RESPONSE=$(curl -s $AUTH "$SONAR_URL/api/measures/component?metricKeys=bugs,code_smells,duplicated_lines_density,sqale_rating&component=$PROJECT_KEY")
         
-        BUGS=$(echo "$QUALITY_RESPONSE" | jq -r '.component.measures[] | select(.metric=="bugs") | .value // "0"')
-        CODE_SMELLS=$(echo "$QUALITY_RESPONSE" | jq -r '.component.measures[] | select(.metric=="code_smells") | .value // "0"')
-        DUPLICATION=$(echo "$QUALITY_RESPONSE" | jq -r '.component.measures[] | select(.metric=="duplicated_lines_density") | .value // "0"')
-        MAINTAINABILITY=$(echo "$QUALITY_RESPONSE" | jq -r '.component.measures[] | select(.metric=="sqale_rating") | .value // "N/A"')
+        if [ -z "$QUALITY_RESPONSE" ] || [ "$QUALITY_RESPONSE" == "null" ]; then
+          echo "Warning: No quality metrics available yet"
+          BUGS="N/A"
+          CODE_SMELLS="N/A"
+          DUPLICATION="N/A"
+          MAINTAINABILITY="N/A"
+        else
+          BUGS=$(echo "$QUALITY_RESPONSE" | jq -r '.component.measures[]? | select(.metric=="bugs") | .value // empty' | head -1)
+          CODE_SMELLS=$(echo "$QUALITY_RESPONSE" | jq -r '.component.measures[]? | select(.metric=="code_smells") | .value // empty' | head -1)
+          DUPLICATION=$(echo "$QUALITY_RESPONSE" | jq -r '.component.measures[]? | select(.metric=="duplicated_lines_density") | .value // empty' | head -1)
+          MAINTAINABILITY=$(echo "$QUALITY_RESPONSE" | jq -r '.component.measures[]? | select(.metric=="sqale_rating") | .value // empty' | head -1)
+          [ -z "$BUGS" ] && BUGS="N/A"
+          [ -z "$CODE_SMELLS" ] && CODE_SMELLS="N/A"
+          [ -z "$DUPLICATION" ] && DUPLICATION="N/A"
+          [ -z "$MAINTAINABILITY" ] && MAINTAINABILITY="N/A"
+        fi
         
         echo "Bugs: $BUGS"
         echo "Code Smells: $CODE_SMELLS"
