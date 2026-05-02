@@ -117,19 +117,23 @@ jobs:
         # Fetch coverage metrics
         echo ""
         echo "--- Code Coverage ---"
-        COVERAGE_RESPONSE=$(curl -s $AUTH "$SONAR_URL/api/measures/component?metricKeys=coverage,lines_to_cover,lines_covered&component=$PROJECT_KEY")
+        COVERAGE_RESPONSE=$(curl -s $AUTH "$SONAR_URL/api/measures/component?metricKeys=coverage,lines_to_cover,lines_covered,uncovered_lines,line_coverage,branch_coverage&component=$PROJECT_KEY")
+        
+        # Debug: Show what metrics are actually available
+        echo "Available coverage metrics:"
+        echo "$COVERAGE_RESPONSE" | jq -r '.component.measures[]? | "\(.metric): \(.value)"' 2>/dev/null || echo "No coverage metrics found"
         
         TOTAL_COVERAGE=$(echo "$COVERAGE_RESPONSE" | jq -r '.component.measures[]? | select(.metric=="coverage") | .value // empty' 2>/dev/null | head -1)
-        LINES_TO_COVER=$(echo "$COVERAGE_RESPONSE" | jq -r '.component.measures[]? | select(.metric=="lines_to_cover") | .value // empty' 2>/dev/null | head -1)
-        LINES_COVERED=$(echo "$COVERAGE_RESPONSE" | jq -r '.component.measures[]? | select(.metric=="lines_covered") | .value // empty' 2>/dev/null | head -1)
+        LINE_COVERAGE=$(echo "$COVERAGE_RESPONSE" | jq -r '.component.measures[]? | select(.metric=="line_coverage") | .value // empty' 2>/dev/null | head -1)
+        BRANCH_COVERAGE=$(echo "$COVERAGE_RESPONSE" | jq -r '.component.measures[]? | select(.metric=="branch_coverage") | .value // empty' 2>/dev/null | head -1)
         
         [ -z "$TOTAL_COVERAGE" ] && TOTAL_COVERAGE="N/A"
-        [ -z "$LINES_TO_COVER" ] && LINES_TO_COVER="N/A"
-        [ -z "$LINES_COVERED" ] && LINES_COVERED="N/A"
+        [ -z "$LINE_COVERAGE" ] && LINE_COVERAGE="N/A"
+        [ -z "$BRANCH_COVERAGE" ] && BRANCH_COVERAGE="N/A"
         
         echo "Total Code Coverage: ${TOTAL_COVERAGE}%"
-        echo "Lines to Cover: $LINES_TO_COVER"
-        echo "Lines Covered: $LINES_COVERED"
+        echo "Line Coverage: ${LINE_COVERAGE}%"
+        echo "Branch Coverage: ${BRANCH_COVERAGE}%"
         
         # Fetch vulnerability metrics
         echo ""
