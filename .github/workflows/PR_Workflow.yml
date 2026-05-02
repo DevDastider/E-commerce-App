@@ -1,10 +1,8 @@
-# This workflow will build a Java project with Maven, and cache/restore any dependencies to improve the workflow execution time
+# This workflow builds a Java project with Maven, runs SonarQube analysis, and generates code quality metrics.
+# It is triggered on push to master, pull requests to master, and manual workflow dispatch.
+# The workflow includes Maven build, SonarQube scan, and metrics collection/reporting.
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-maven
 
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
 
 name: PR_Workflow
 
@@ -49,13 +47,13 @@ jobs:
     - name: Wait for SonarQube to be ready
       run: |
         echo "Waiting for SonarQube to start..."
-         for i in {1..32}; do
-           if curl --silent --fail http://localhost:9000/api/system/status; then
-             echo "SonarQube is up and running!"
-             break
-           fi
-           echo "Waiting for SonarQube..."
-           sleep 10
+        for i in {1..32}; do
+          if curl --silent --fail http://localhost:9000/api/system/status; then
+            echo "SonarQube is up and running!"
+            break
+          fi
+          echo "Waiting for SonarQube..."
+          sleep 10
         done
         echo "SonarQube did not become healthy, continuing anyway."
 
@@ -67,7 +65,53 @@ jobs:
           -Dsonar.login=admin \
           -Dsonar.password=admin
 
-    - name: Fetch SonarQube Coverage
+    - name: Fetch SonarQube Metrics
       run: |
-        COVERAGE=$(curl -s -u admin:admin http://localhost:9000/api/measures/component?metricKeys=coverage&component=com.sgd%3Ae-commerce | jq -r '.component.measures[0].value')
-        echo "SonarQube Coverage: $COVERAGE%"
+        echo "========== SonarQube Code Quality Metrics =========="
+        
+        # API endpoint and credentials
+        SONAR_URL="http://localhost:9000"
+        PROJECT_KEY="com.sgd:e-commerce"
+        AUTH="-u admin:admin"
+        
+        # Fetch coverage metrics
+        echo ""
+        echo "--- Code Coverage ---"
+        COVERAGE_RESPONSE=$(curl -s $AUTH "$SONAR_URL/api/measures/component?metricKeys=coverage,new_code_coverage&component=$PROJECT_KEY")
+        
+        TOTAL_COVERAGE=$(echo "$COVERAGE_RESPONSE" | jq -r '.component.measures[] | select(.metric=="coverage") | .value // "N/A"')
+        NEW_CODE_COVERAGE=$(echo "$COVERAGE_RESPONSE" | jq -r '.component.measures[] | select(.metric=="new_code_coverage") | .value // "N/A"')
+        
+        echo "Total Code Coverage: ${TOTAL_COVERAGE}%"
+        echo "New Code Coverage: ${NEW_CODE_COVERAGE}%"
+        
+        # Fetch vulnerability metrics
+        echo ""
+        echo "--- Vulnerabilities ---"
+        ISSUES_RESPONSE=$(curl -s $AUTH "$SONAR_URL/api/issues/search?componentKeys=$PROJECT_KEY&types=VULNERABILITY&ps=500")
+        
+        CRITICAL_COUNT=$(echo "$ISSUES_RESPONSE" | jq '[.issues[] | select(.severity=="CRITICAL")] | length')
+        MAJOR_COUNT=$(echo "$ISSUES_RESPONSE" | jq '[.issues[] | select(.severity=="MAJOR")] | length')
+        HIGH_COUNT=$(echo "$ISSUES_RESPONSE" | jq '[.issues[] | select(.severity=="HIGH")] | length')
+        
+        echo "Critical Vulnerabilities: $CRITICAL_COUNT"
+        echo "Major Vulnerabilities: $MAJOR_COUNT"
+        echo "High Vulnerabilities: $HIGH_COUNT"
+        
+        # Fetch other quality metrics
+        echo ""
+        echo "--- Other Quality Metrics ---"
+        QUALITY_RESPONSE=$(curl -s $AUTH "$SONAR_URL/api/measures/component?metricKeys=bugs,code_smells,duplicated_lines_density,sqale_rating&component=$PROJECT_KEY")
+        
+        BUGS=$(echo "$QUALITY_RESPONSE" | jq -r '.component.measures[] | select(.metric=="bugs") | .value // "0"')
+        CODE_SMELLS=$(echo "$QUALITY_RESPONSE" | jq -r '.component.measures[] | select(.metric=="code_smells") | .value // "0"')
+        DUPLICATION=$(echo "$QUALITY_RESPONSE" | jq -r '.component.measures[] | select(.metric=="duplicated_lines_density") | .value // "0"')
+        MAINTAINABILITY=$(echo "$QUALITY_RESPONSE" | jq -r '.component.measures[] | select(.metric=="sqale_rating") | .value // "N/A"')
+        
+        echo "Bugs: $BUGS"
+        echo "Code Smells: $CODE_SMELLS"
+        echo "Duplicated Lines (%): $DUPLICATION%"
+        echo "Maintainability Rating: $MAINTAINABILITY"
+        
+        echo ""
+        echo "====================================================="
