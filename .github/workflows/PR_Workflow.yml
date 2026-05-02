@@ -47,15 +47,32 @@ jobs:
     - name: Wait for SonarQube to be ready
       run: |
         echo "Waiting for SonarQube to start..."
-        for i in {1..32}; do
-          if curl --silent --fail http://localhost:9000/api/system/status; then
-            echo "SonarQube is up and running!"
-            break
+        MAX_ATTEMPTS=60
+        ATTEMPT=0
+        
+        while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+          echo "Attempt $((ATTEMPT + 1))/$MAX_ATTEMPTS..."
+          
+          # Check if SonarQube is responding
+          RESPONSE=$(curl -s -w "\n%{http_code}" http://localhost:9000/api/system/status)
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n 1)
+          BODY=$(echo "$RESPONSE" | head -n -1)
+          
+          if [ "$HTTP_CODE" = "200" ]; then
+            STATUS=$(echo "$BODY" | grep -o '"status":"[^"]*"' | cut -d'"' -f4)
+            if [ "$STATUS" = "UP" ]; then
+              echo "SonarQube is up and running!"
+              break
+            fi
           fi
-          echo "Waiting for SonarQube..."
-          sleep 10
+          
+          ATTEMPT=$((ATTEMPT + 1))
+          sleep 3
         done
-        echo "SonarQube did not become healthy, continuing anyway."
+        
+        if [ $ATTEMPT -eq $MAX_ATTEMPTS ]; then
+          echo "Warning: SonarQube may not be fully ready, but continuing..."
+        fi
 
     - name: SonarQube Scan
       run: |
@@ -76,7 +93,7 @@ jobs:
         
         # Wait for SonarQube to process the analysis
         echo "Waiting for SonarQube to process the analysis..."
-        sleep 10
+        sleep 15
         
         # Debug: Check if project exists
         echo ""
