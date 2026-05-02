@@ -83,7 +83,8 @@ jobs:
           -Dsonar.password=admin \
           -Dsonar.java.coveragePlugin=jacoco \
           -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
-          -Dsonar.jacoco.reportPaths=target/jacoco.exec
+          -Dsonar.jacoco.reportPaths=target/jacoco.exec \
+          -Dsonar.junit.reportPaths=target/surefire-reports
 
     - name: Fetch SonarQube Metrics
       run: |
