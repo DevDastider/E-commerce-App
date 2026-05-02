@@ -80,7 +80,9 @@ jobs:
           -Dsonar.projectKey=com.sgd:e-commerce \
           -Dsonar.host.url=http://localhost:9000 \
           -Dsonar.login=admin \
-          -Dsonar.password=admin
+          -Dsonar.password=admin \
+          -Dsonar.java.coveragePlugin=jacoco \
+          -Dsonar.jacoco.reportPath=target/jacoco.exec
 
     - name: Fetch SonarQube Metrics
       run: |
@@ -104,25 +106,24 @@ jobs:
         # Fetch coverage metrics
         echo ""
         echo "--- Code Coverage ---"
-        COVERAGE_RESPONSE=$(curl -s $AUTH "$SONAR_URL/api/measures/component?metricKeys=coverage,new_code_coverage&component=$PROJECT_KEY")
-        
-        echo "Coverage Response: $COVERAGE_RESPONSE"
+        COVERAGE_RESPONSE=$(curl -s $AUTH "$SONAR_URL/api/measures/component?metricKeys=coverage,lines_to_cover,lines_covered&component=$PROJECT_KEY")
         
         TOTAL_COVERAGE=$(echo "$COVERAGE_RESPONSE" | jq -r '.component.measures[]? | select(.metric=="coverage") | .value // empty' 2>/dev/null | head -1)
-        NEW_CODE_COVERAGE=$(echo "$COVERAGE_RESPONSE" | jq -r '.component.measures[]? | select(.metric=="new_code_coverage") | .value // empty' 2>/dev/null | head -1)
+        LINES_TO_COVER=$(echo "$COVERAGE_RESPONSE" | jq -r '.component.measures[]? | select(.metric=="lines_to_cover") | .value // empty' 2>/dev/null | head -1)
+        LINES_COVERED=$(echo "$COVERAGE_RESPONSE" | jq -r '.component.measures[]? | select(.metric=="lines_covered") | .value // empty' 2>/dev/null | head -1)
         
         [ -z "$TOTAL_COVERAGE" ] && TOTAL_COVERAGE="N/A"
-        [ -z "$NEW_CODE_COVERAGE" ] && NEW_CODE_COVERAGE="N/A"
+        [ -z "$LINES_TO_COVER" ] && LINES_TO_COVER="N/A"
+        [ -z "$LINES_COVERED" ] && LINES_COVERED="N/A"
         
         echo "Total Code Coverage: ${TOTAL_COVERAGE}%"
-        echo "New Code Coverage: ${NEW_CODE_COVERAGE}%"
+        echo "Lines to Cover: $LINES_TO_COVER"
+        echo "Lines Covered: $LINES_COVERED"
         
         # Fetch vulnerability metrics
         echo ""
         echo "--- Vulnerabilities ---"
         ISSUES_RESPONSE=$(curl -s $AUTH "$SONAR_URL/api/issues/search?componentKeys=$PROJECT_KEY&types=VULNERABILITY&ps=500")
-        
-        echo "Issues Response: $ISSUES_RESPONSE"
         
         CRITICAL_COUNT=$(echo "$ISSUES_RESPONSE" | jq '[.issues[]? | select(.severity=="CRITICAL")] | length' 2>/dev/null || echo 0)
         MAJOR_COUNT=$(echo "$ISSUES_RESPONSE" | jq '[.issues[]? | select(.severity=="MAJOR")] | length' 2>/dev/null || echo 0)
@@ -135,24 +136,31 @@ jobs:
         # Fetch other quality metrics
         echo ""
         echo "--- Other Quality Metrics ---"
-        QUALITY_RESPONSE=$(curl -s $AUTH "$SONAR_URL/api/measures/component?metricKeys=bugs,code_smells,duplicated_lines_density,sqale_rating&component=$PROJECT_KEY")
-        
-        echo "Quality Response: $QUALITY_RESPONSE"
+        QUALITY_RESPONSE=$(curl -s $AUTH "$SONAR_URL/api/measures/component?metricKeys=bugs,code_smells,duplicated_lines_density,sqale_rating,ncloc,reliability_rating,security_rating&component=$PROJECT_KEY")
         
         BUGS=$(echo "$QUALITY_RESPONSE" | jq -r '.component.measures[]? | select(.metric=="bugs") | .value // empty' 2>/dev/null | head -1)
         CODE_SMELLS=$(echo "$QUALITY_RESPONSE" | jq -r '.component.measures[]? | select(.metric=="code_smells") | .value // empty' 2>/dev/null | head -1)
         DUPLICATION=$(echo "$QUALITY_RESPONSE" | jq -r '.component.measures[]? | select(.metric=="duplicated_lines_density") | .value // empty' 2>/dev/null | head -1)
         MAINTAINABILITY=$(echo "$QUALITY_RESPONSE" | jq -r '.component.measures[]? | select(.metric=="sqale_rating") | .value // empty' 2>/dev/null | head -1)
+        NCLOC=$(echo "$QUALITY_RESPONSE" | jq -r '.component.measures[]? | select(.metric=="ncloc") | .value // empty' 2>/dev/null | head -1)
+        RELIABILITY=$(echo "$QUALITY_RESPONSE" | jq -r '.component.measures[]? | select(.metric=="reliability_rating") | .value // empty' 2>/dev/null | head -1)
+        SECURITY=$(echo "$QUALITY_RESPONSE" | jq -r '.component.measures[]? | select(.metric=="security_rating") | .value // empty' 2>/dev/null | head -1)
         
         [ -z "$BUGS" ] && BUGS="N/A"
         [ -z "$CODE_SMELLS" ] && CODE_SMELLS="N/A"
         [ -z "$DUPLICATION" ] && DUPLICATION="N/A"
         [ -z "$MAINTAINABILITY" ] && MAINTAINABILITY="N/A"
+        [ -z "$NCLOC" ] && NCLOC="N/A"
+        [ -z "$RELIABILITY" ] && RELIABILITY="N/A"
+        [ -z "$SECURITY" ] && SECURITY="N/A"
         
         echo "Bugs: $BUGS"
         echo "Code Smells: $CODE_SMELLS"
         echo "Duplicated Lines (%): $DUPLICATION%"
         echo "Maintainability Rating: $MAINTAINABILITY"
+        echo "Total Lines of Code: $NCLOC"
+        echo "Reliability Rating: $RELIABILITY"
+        echo "Security Rating: $SECURITY"
         
         echo ""
         echo "====================================================="
