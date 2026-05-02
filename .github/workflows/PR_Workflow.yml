@@ -42,7 +42,7 @@ jobs:
         cache: maven
 
     - name: Build with Maven
-      run: mvn -B package --file pom.xml
+      run: mvn clean test package --file pom.xml
 
     - name: Wait for SonarQube to be ready
       run: |
@@ -80,9 +80,7 @@ jobs:
           -Dsonar.projectKey=com.sgd:e-commerce \
           -Dsonar.host.url=http://localhost:9000 \
           -Dsonar.login=admin \
-          -Dsonar.password=admin \
-          -Dsonar.java.coveragePlugin=jacoco \
-          -Dsonar.jacoco.reportPath=target/jacoco.exec
+          -Dsonar.password=admin
 
     - name: Fetch SonarQube Metrics
       run: |
@@ -95,13 +93,24 @@ jobs:
         
         # Wait for SonarQube to process the analysis
         echo "Waiting for SonarQube to process the analysis..."
-        sleep 15
+        sleep 20
         
-        # Debug: Check if project exists
+        # Debug: Check if project exists and get details
         echo ""
-        echo "--- Debug: Checking Project ---"
+        echo "--- Project Status ---"
         PROJECT_RESPONSE=$(curl -s $AUTH "$SONAR_URL/api/projects/search?query=e-commerce")
-        echo "Projects found: $(echo "$PROJECT_RESPONSE" | jq '.paging.total')"
+        PROJECT_COUNT=$(echo "$PROJECT_RESPONSE" | jq '.paging.total')
+        echo "Projects found: $PROJECT_COUNT"
+        
+        if [ "$PROJECT_COUNT" -eq 0 ]; then
+          echo "ERROR: Project not found in SonarQube!"
+          exit 1
+        fi
+        
+        # Get project details
+        PROJECT_DETAIL=$(curl -s $AUTH "$SONAR_URL/api/components/show?component=$PROJECT_KEY")
+        PROJECT_NAME=$(echo "$PROJECT_DETAIL" | jq -r '.component.name')
+        echo "Project: $PROJECT_NAME"
         
         # Fetch coverage metrics
         echo ""
@@ -135,7 +144,7 @@ jobs:
         
         # Fetch other quality metrics
         echo ""
-        echo "--- Other Quality Metrics ---"
+        echo "--- Code Quality Metrics ---"
         QUALITY_RESPONSE=$(curl -s $AUTH "$SONAR_URL/api/measures/component?metricKeys=bugs,code_smells,duplicated_lines_density,sqale_rating,ncloc,reliability_rating,security_rating&component=$PROJECT_KEY")
         
         BUGS=$(echo "$QUALITY_RESPONSE" | jq -r '.component.measures[]? | select(.metric=="bugs") | .value // empty' 2>/dev/null | head -1)
@@ -146,17 +155,17 @@ jobs:
         RELIABILITY=$(echo "$QUALITY_RESPONSE" | jq -r '.component.measures[]? | select(.metric=="reliability_rating") | .value // empty' 2>/dev/null | head -1)
         SECURITY=$(echo "$QUALITY_RESPONSE" | jq -r '.component.measures[]? | select(.metric=="security_rating") | .value // empty' 2>/dev/null | head -1)
         
-        [ -z "$BUGS" ] && BUGS="N/A"
-        [ -z "$CODE_SMELLS" ] && CODE_SMELLS="N/A"
-        [ -z "$DUPLICATION" ] && DUPLICATION="N/A"
+        [ -z "$BUGS" ] && BUGS="0"
+        [ -z "$CODE_SMELLS" ] && CODE_SMELLS="0"
+        [ -z "$DUPLICATION" ] && DUPLICATION="0"
         [ -z "$MAINTAINABILITY" ] && MAINTAINABILITY="N/A"
-        [ -z "$NCLOC" ] && NCLOC="N/A"
+        [ -z "$NCLOC" ] && NCLOC="0"
         [ -z "$RELIABILITY" ] && RELIABILITY="N/A"
         [ -z "$SECURITY" ] && SECURITY="N/A"
         
         echo "Bugs: $BUGS"
         echo "Code Smells: $CODE_SMELLS"
-        echo "Duplicated Lines (%): $DUPLICATION%"
+        echo "Duplicated Lines Density (%): $DUPLICATION"
         echo "Maintainability Rating: $MAINTAINABILITY"
         echo "Total Lines of Code: $NCLOC"
         echo "Reliability Rating: $RELIABILITY"
