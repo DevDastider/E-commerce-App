@@ -80,7 +80,10 @@ jobs:
           -Dsonar.projectKey=com.sgd:e-commerce \
           -Dsonar.host.url=http://localhost:9000 \
           -Dsonar.login=admin \
-          -Dsonar.password=admin
+          -Dsonar.password=admin \
+          -Dsonar.java.coveragePlugin=jacoco \
+          -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
+          -Dsonar.jacoco.reportPaths=target/jacoco.exec
 
     - name: Fetch SonarQube Metrics
       run: |
