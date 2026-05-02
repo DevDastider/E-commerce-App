@@ -20,6 +20,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import com.sgd.ecommerce.dao.UserDao;
+import com.sgd.ecommerce.exception.UserNotFoundException;
 import com.sgd.ecommerce.model.LoginRequest;
 import com.sgd.ecommerce.model.LoginResponse;
 import com.sgd.ecommerce.model.User;
@@ -54,7 +55,7 @@ public class JWTService implements UserDetailsService {
 		}
 	}
 
-	public LoginResponse createJwtToken(LoginRequest loginRequest) throws Exception {
+	public LoginResponse createJwtToken(LoginRequest loginRequest) throws UserNotFoundException {
 		String userName = loginRequest.getUserName();
 		String userPassword = loginRequest.getUserPassword();
 		authenticate(userName, userPassword);
@@ -65,13 +66,13 @@ public class JWTService implements UserDetailsService {
 		return new LoginResponse(user, jwtToken);
 	}
 
-	private void authenticate(String userName, String userPassword) throws Exception {
+	private void authenticate(String userName, String userPassword) throws UserNotFoundException {
 		try {
 			authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(userName, userPassword));
 		} catch (DisabledException ex) {
-			throw new Exception("User is disabled");
+			throw new UserNotFoundException(403, "User is disabled", ex);
 		} catch (BadCredentialsException ex) {
-			throw new Exception("Bad credentials from user");
+			throw new UserNotFoundException("Bad credentials from user", ex);
 		}
 	}
 
