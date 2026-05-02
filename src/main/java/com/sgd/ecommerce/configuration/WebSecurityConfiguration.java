@@ -3,6 +3,8 @@
  */
 package com.sgd.ecommerce.configuration;
 
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -39,7 +41,7 @@ public class WebSecurityConfiguration {
 	
 	@Autowired
 	private JWTRequestFilter jwtRequestFilter;
-	
+
 	@Bean
 	public AuthenticationManager authenticationManagerBean(AuthenticationConfiguration authenticationConfiguration)
 			throws Exception {
@@ -50,13 +52,13 @@ public class WebSecurityConfiguration {
 	PasswordEncoder passwordEncoder() {
 		return new BCryptPasswordEncoder();
 	}
-	
 	@Bean
 	public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
 		httpSecurity.cors();
 		httpSecurity.csrf(c-> c.disable())
 					.authorizeRequests()
-					.requestMatchers("/authenticate", "/registerNewUser", "/getAllProducts","/getProductDetailsById/{productId}").permitAll()
+					.requestMatchers("/authenticate", "/registerNewUser", "/getAllProducts",
+							"/getProductDetailsById/{productId}").permitAll()
 					.requestMatchers(HttpHeaders.ALLOW).permitAll()
 					.anyRequest().authenticated()
 					.and()
