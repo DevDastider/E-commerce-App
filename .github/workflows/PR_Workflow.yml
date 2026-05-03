@@ -1,7 +1,6 @@
 # This workflow builds a Java project with Maven, runs SonarQube analysis, and generates code quality metrics.
 # It is triggered on push to master, pull requests to master, and manual workflow dispatch.
 # The workflow includes Maven build, SonarQube scan, and metrics collection/reporting.
-# Uses SonarQube Community Edition 10.6.0 which supports code coverage metrics
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-maven
 
 
@@ -21,7 +20,7 @@ jobs:
 
     services:
       sonarqube:
-        image: sonarqube:10.6.0-community
+        image: sonarqube:26.4.0.121862-community
         ports:
           - 9000:9000
         options: >-
