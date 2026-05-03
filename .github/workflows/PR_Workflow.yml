@@ -70,6 +70,12 @@ jobs:
         else
           echo "❌ No test reports found!"
         fi
+        
+        echo "Checking JaCoCo XML content..."
+        if [ -f "target/site/jacoco/jacoco.xml" ]; then
+          echo "Sample coverage data from XML:"
+          grep -A 5 -B 5 "counter type=" target/site/jacoco/jacoco.xml | head -20
+        fi
 
     - name: Wait for SonarQube to be ready
       run: |
@@ -108,8 +114,8 @@ jobs:
           -Dsonar.host.url=http://localhost:9000 \
           -Dsonar.login=admin \
           -Dsonar.password=admin \
-          -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
-          -Dsonar.junit.reportPaths=target/surefire-reports
+          -Dsonar.coverage.jacoco.xmlReportPaths=$(pwd)/target/site/jacoco/jacoco.xml \
+          -Dsonar.junit.reportPaths=$(pwd)/target/surefire-reports
 
     - name: Fetch SonarQube Metrics
       run: |
@@ -122,7 +128,7 @@ jobs:
         
         # Wait for SonarQube to process the analysis
         echo "Waiting for SonarQube to process the analysis..."
-        sleep 20
+        sleep 60
         
         # Debug: Check if project exists and get details
         echo ""
