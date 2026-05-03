@@ -1,6 +1,7 @@
 # This workflow builds a Java project with Maven, runs SonarQube analysis, and generates code quality metrics.
 # It is triggered on push to master, pull requests to master, and manual workflow dispatch.
 # The workflow includes Maven build, SonarQube scan, and metrics collection/reporting.
+# Uses SonarQube Developer Edition 10.6.0 which supports code coverage metrics
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-maven
 
 
@@ -20,7 +21,7 @@ jobs:
 
     services:
       sonarqube:
-        image: sonarqube:10.6.0-community
+        image: sonarqube:10.6.0-developer
         ports:
           - 9000:9000
         options: >-
@@ -81,7 +82,8 @@ jobs:
           -Dsonar.host.url=http://localhost:9000 \
           -Dsonar.login=admin \
           -Dsonar.password=admin \
-          -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
+          -Dsonar.java.coveragePlugin=jacoco \
+          -Dsonar.jacoco.reportPath=target/jacoco.exec \
           -Dsonar.junit.reportPaths=target/surefire-reports
 
     - name: Fetch SonarQube Metrics
@@ -117,11 +119,7 @@ jobs:
         # Fetch coverage metrics
         echo ""
         echo "--- Code Coverage ---"
-        COVERAGE_RESPONSE=$(curl -s $AUTH "$SONAR_URL/api/measures/component?metricKeys=coverage,lines_to_cover,lines_covered,uncovered_lines,line_coverage,branch_coverage&component=$PROJECT_KEY")
-        
-        # Debug: Show what metrics are actually available
-        echo "Available coverage metrics:"
-        echo "$COVERAGE_RESPONSE" | jq -r '.component.measures[]? | "\(.metric): \(.value)"' 2>/dev/null || echo "No coverage metrics found"
+        COVERAGE_RESPONSE=$(curl -s $AUTH "$SONAR_URL/api/measures/component?metricKeys=coverage,line_coverage,branch_coverage&component=$PROJECT_KEY")
         
         TOTAL_COVERAGE=$(echo "$COVERAGE_RESPONSE" | jq -r '.component.measures[]? | select(.metric=="coverage") | .value // empty' 2>/dev/null | head -1)
         LINE_COVERAGE=$(echo "$COVERAGE_RESPONSE" | jq -r '.component.measures[]? | select(.metric=="line_coverage") | .value // empty' 2>/dev/null | head -1)
