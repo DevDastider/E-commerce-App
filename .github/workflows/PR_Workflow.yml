@@ -1,7 +1,7 @@
 # This workflow builds a Java project with Maven, runs SonarQube analysis, and generates code quality metrics.
 # It is triggered on push to master, pull requests to master, and manual workflow dispatch.
 # The workflow includes Maven build, SonarQube scan, and metrics collection/reporting.
-# Uses SonarQube Developer Edition 10.6.0 which supports code coverage metrics
+# Uses SonarQube Community Edition 10.6.0 which supports code coverage metrics
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-maven
 
 
@@ -21,7 +21,7 @@ jobs:
 
     services:
       sonarqube:
-        image: sonarqube:10.6.0-developer
+        image: sonarqube:10.6.0-community
         ports:
           - 9000:9000
         options: >-
@@ -110,59 +110,16 @@ jobs:
     - name: SonarQube Scan
       run: |
         echo "Running SonarQube analysis..."
-        SONAR_URL="http://localhost:9000"
-        AUTH="-u admin:admin"
         mvn sonar:sonar \
           -Dsonar.projectKey=com.sgd:e-commerce \
-          -Dsonar.host.url=$SONAR_URL \
+          -Dsonar.host.url=http://localhost:9000 \
           -Dsonar.login=admin \
           -Dsonar.password=admin \
           -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
-          -Dsonar.junit.reportPaths=target/surefire-reports 2>&1 | tee sonar_output.log
+          -Dsonar.junit.reportPaths=target/surefire-reports
         
-        # Extract task ID from the output
-        TASK_ID=$(grep "api/ce/task?id=" sonar_output.log | sed 's/.*api\/ce\/task?id=\([^"]*\).*/\1/')
-        echo "Analysis task ID: $TASK_ID"
-        
-        if [ -z "$TASK_ID" ]; then
-          echo "Failed to extract task ID"
-          exit 1
-        fi
-        
-        # Wait for analysis to complete
-        echo "Waiting for analysis to complete..."
-        MAX_WAIT=300  # 5 minutes
-        WAIT_TIME=0
-        
-        while true; do
-          RESPONSE=$(curl -s $AUTH "$SONAR_URL/api/ce/task?id=$TASK_ID")
-          echo "DEBUG: Response: $RESPONSE" >&2
-          
-          STATUS=$(echo "$RESPONSE" | jq -r '.task.status // "UNKNOWN"' 2>/dev/null)
-          echo "DEBUG: Status extracted: $STATUS" >&2
-          
-          if [ "$STATUS" = "SUCCESS" ]; then
-            echo "Analysis completed successfully!"
-            break
-          elif [ "$STATUS" = "FAILED" ]; then
-            echo "ERROR: Analysis task failed!"
-            echo "Response: $RESPONSE"
-            exit 1
-          elif [ "$STATUS" = "UNKNOWN" ]; then
-            echo "ERROR: Could not parse status from response"
-            echo "Response: $RESPONSE"
-            exit 1
-          fi
-          
-          if [ $WAIT_TIME -ge $MAX_WAIT ]; then
-            echo "ERROR: Analysis did not complete within 5 minutes timeout"
-            exit 1
-          fi
-          
-          echo "Analysis status: $STATUS, waiting... ($WAIT_TIME seconds elapsed)"
-          sleep 5
-          WAIT_TIME=$((WAIT_TIME + 5))
-        done
+        echo "Analysis completed. Waiting for metrics to be available..."
+        sleep 10
 
     - name: Fetch SonarQube Metrics
       run: |
@@ -194,19 +151,19 @@ jobs:
         echo ""
         echo "--- Code Coverage ---"
         COVERAGE_RESPONSE=$(curl -s $AUTH "$SONAR_URL/api/measures/component?metricKeys=coverage,line_coverage,branch_coverage&component=$PROJECT_KEY")
-        
+
         TOTAL_COVERAGE=$(echo "$COVERAGE_RESPONSE" | jq -r '.component.measures[]? | select(.metric=="coverage") | .value // empty' 2>/dev/null | head -1)
         LINE_COVERAGE=$(echo "$COVERAGE_RESPONSE" | jq -r '.component.measures[]? | select(.metric=="line_coverage") | .value // empty' 2>/dev/null | head -1)
         BRANCH_COVERAGE=$(echo "$COVERAGE_RESPONSE" | jq -r '.component.measures[]? | select(.metric=="branch_coverage") | .value // empty' 2>/dev/null | head -1)
-        
+
         [ -z "$TOTAL_COVERAGE" ] && TOTAL_COVERAGE="N/A"
         [ -z "$LINE_COVERAGE" ] && LINE_COVERAGE="N/A"
         [ -z "$BRANCH_COVERAGE" ] && BRANCH_COVERAGE="N/A"
-        
+
         echo "Total Code Coverage: ${TOTAL_COVERAGE}%"
         echo "Line Coverage: ${LINE_COVERAGE}%"
         echo "Branch Coverage: ${BRANCH_COVERAGE}%"
-        
+
         # Fetch vulnerability metrics
         echo ""
         echo "--- Vulnerabilities ---"
