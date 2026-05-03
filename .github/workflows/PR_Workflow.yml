@@ -109,13 +109,52 @@ jobs:
 
     - name: SonarQube Scan
       run: |
+        echo "Running SonarQube analysis..."
+        SONAR_URL="http://localhost:9000"
+        AUTH="-u admin:admin"
         mvn sonar:sonar \
           -Dsonar.projectKey=com.sgd:e-commerce \
-          -Dsonar.host.url=http://localhost:9000 \
+          -Dsonar.host.url=$SONAR_URL \
           -Dsonar.login=admin \
           -Dsonar.password=admin \
-          -Dsonar.coverage.jacoco.xmlReportPaths=$(pwd)/target/site/jacoco/jacoco.xml \
-          -Dsonar.junit.reportPaths=$(pwd)/target/surefire-reports
+          -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
+          -Dsonar.junit.reportPaths=target/surefire-reports 2>&1 | tee sonar_output.log
+        
+        # Extract task ID from the output
+        TASK_ID=$(grep "api/ce/task?id=" sonar_output.log | sed 's/.*api\/ce\/task?id=\([^"]*\).*/\1/')
+        echo "Analysis task ID: $TASK_ID"
+        
+        if [ -z "$TASK_ID" ]; then
+          echo "Failed to extract task ID"
+          exit 1
+        fi
+        
+        # Wait for analysis to complete
+        echo "Waiting for analysis to complete..."
+        MAX_WAIT=300  # 5 minutes
+        WAIT_TIME=0
+        
+        while [ $WAIT_TIME -lt $MAX_WAIT ]; do
+          RESPONSE=$(curl -s $AUTH "$SONAR_URL/api/ce/task?id=$TASK_ID")
+          STATUS=$(echo "$RESPONSE" | jq -r '.task.status // empty')
+          
+          if [ "$STATUS" = "SUCCESS" ]; then
+            echo "Analysis completed successfully!"
+            break
+          elif [ "$STATUS" = "FAILED" ]; then
+            echo "Analysis failed!"
+            exit 1
+          fi
+          
+          echo "Analysis status: $STATUS, waiting..."
+          sleep 10
+          WAIT_TIME=$((WAIT_TIME + 10))
+        done
+        
+        if [ $WAIT_TIME -ge $MAX_WAIT ]; then
+          echo "Analysis did not complete within timeout"
+          exit 1
+        fi
 
     - name: Fetch SonarQube Metrics
       run: |
@@ -125,10 +164,6 @@ jobs:
         SONAR_URL="http://localhost:9000"
         PROJECT_KEY="com.sgd%3Ae-commerce"
         AUTH="-u admin:admin"
-        
-        # Wait for SonarQube to process the analysis
-        echo "Waiting for SonarQube to process the analysis..."
-        sleep 60
         
         # Debug: Check if project exists and get details
         echo ""
