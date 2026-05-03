@@ -45,6 +45,32 @@ jobs:
     - name: Build with Maven
       run: mvn clean test package --file pom.xml
 
+    - name: Verify JaCoCo Report Generation
+      run: |
+        echo "Checking if JaCoCo coverage reports were generated..."
+        if [ -f "target/site/jacoco/jacoco.xml" ]; then
+          echo "✅ JaCoCo XML report found: target/site/jacoco/jacoco.xml"
+          ls -la target/site/jacoco/
+        else
+          echo "❌ JaCoCo XML report not found!"
+          echo "Checking for alternative locations..."
+          find target -name "*.xml" -type f | head -10
+        fi
+        
+        if [ -f "target/jacoco.exec" ]; then
+          echo "✅ JaCoCo exec file found: target/jacoco.exec"
+        else
+          echo "❌ JaCoCo exec file not found!"
+        fi
+        
+        echo "Checking test execution..."
+        if [ -d "target/surefire-reports" ]; then
+          TEST_COUNT=$(find target/surefire-reports -name "*.txt" -exec grep -l "Tests run:" {} \; | wc -l)
+          echo "✅ Test reports found: $TEST_COUNT test files"
+        else
+          echo "❌ No test reports found!"
+        fi
+
     - name: Wait for SonarQube to be ready
       run: |
         echo "Waiting for SonarQube to start..."
@@ -82,8 +108,7 @@ jobs:
           -Dsonar.host.url=http://localhost:9000 \
           -Dsonar.login=admin \
           -Dsonar.password=admin \
-          -Dsonar.java.coveragePlugin=jacoco \
-          -Dsonar.jacoco.reportPath=target/jacoco.exec \
+          -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
           -Dsonar.junit.reportPaths=target/surefire-reports
 
     - name: Fetch SonarQube Metrics
