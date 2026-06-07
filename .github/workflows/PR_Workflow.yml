@@ -120,7 +120,7 @@ jobs:
         echo "Analysis completed. Waiting for metrics to be available..."
         sleep 10
 
-    - name: Fetch SonarQube Metrics
+    - name: Fetch SonarQube Metrics and Comment PR
       run: |
         echo "========== SonarQube Code Quality Metrics =========="
         
@@ -207,3 +207,45 @@ jobs:
         
         echo ""
         echo "====================================================="
+        
+        # Post comment to PR if this is a pull request
+        if [ "${{ github.event_name }}" = "pull_request" ]; then
+          echo ""
+          echo "Posting metrics to PR comment..."
+          
+          # Format the comment as Markdown
+          COMMENT="## 📊 SonarQube Code Quality Report
+          
+          | Metric | Value |
+          |--------|-------|
+          | **Total Code Coverage** | ${TOTAL_COVERAGE}% |
+          | **Line Coverage** | ${LINE_COVERAGE}% |
+          | **Branch Coverage** | ${BRANCH_COVERAGE}% |
+          
+          ### 🔒 Vulnerabilities
+          | Severity | Count |
+          |----------|-------|
+          | 🔴 Critical | $CRITICAL_COUNT |
+          | 🟠 Major | $MAJOR_COUNT |
+          | 🟡 High | $HIGH_COUNT |
+          
+          ### 💻 Code Quality Metrics
+          | Metric | Value |
+          |--------|-------|
+          | **Bugs** | $BUGS |
+          | **Code Smells** | $CODE_SMELLS |
+          | **Duplication (%)** | $DUPLICATION |
+          | **Maintainability Rating** | $MAINTAINABILITY |
+          | **Lines of Code** | $NCLOC |
+          | **Reliability Rating** | $RELIABILITY |
+          | **Security Rating** | $SECURITY |"
+          
+          # Post comment to PR
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
+            -d "{\"body\": \"$(echo "$COMMENT" | perl -pe 's/"/\\"/g' | perl -pe 's/\n/\\n/g')\"}" \
+            || echo "Failed to post comment, but workflow continues"
+        fi
+
