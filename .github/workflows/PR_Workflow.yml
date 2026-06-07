@@ -13,6 +13,10 @@ on:
     branches: [ "master" ]
   workflow_dispatch:  # Enables manual trigger
 
+permissions:
+  pull-requests: write
+  contents: read
+
 jobs:
   build:
 
@@ -50,6 +54,14 @@ jobs:
         if [ -f "target/site/jacoco/jacoco.xml" ]; then
           echo "✅ JaCoCo XML report found: target/site/jacoco/jacoco.xml"
           ls -la target/site/jacoco/
+          echo ""
+          echo "File size: $(wc -c < target/site/jacoco/jacoco.xml) bytes"
+          echo ""
+          echo "XML structure (first 30 lines):"
+          head -30 target/site/jacoco/jacoco.xml
+          echo ""
+          echo "Checking for coverage data:"
+          grep -c "counter type=" target/site/jacoco/jacoco.xml || echo "No counter elements found"
         else
           echo "❌ JaCoCo XML report not found!"
           echo "Checking for alternative locations..."
@@ -68,12 +80,6 @@ jobs:
           echo "✅ Test reports found: $TEST_COUNT test files"
         else
           echo "❌ No test reports found!"
-        fi
-        
-        echo "Checking JaCoCo XML content..."
-        if [ -f "target/site/jacoco/jacoco.xml" ]; then
-          echo "Sample coverage data from XML:"
-          grep -A 5 -B 5 "counter type=" target/site/jacoco/jacoco.xml | head -20
         fi
 
     - name: Wait for SonarQube to be ready
@@ -109,16 +115,31 @@ jobs:
     - name: SonarQube Scan
       run: |
         echo "Running SonarQube analysis..."
+        
+        # Verify JaCoCo report exists
+        echo "Checking for JaCoCo XML report..."
+        if [ -f "target/site/jacoco/jacoco.xml" ]; then
+          echo "✅ JaCoCo XML found"
+          echo "File size: $(wc -c < target/site/jacoco/jacoco.xml) bytes"
+          echo "First 500 chars:"
+          head -c 500 target/site/jacoco/jacoco.xml
+          echo ""
+        else
+          echo "❌ JaCoCo XML not found at target/site/jacoco/jacoco.xml"
+          find target -name "jacoco.xml" -type f 2>/dev/null || echo "No jacoco.xml found anywhere in target"
+        fi
+        
         mvn sonar:sonar \
           -Dsonar.projectKey=com.sgd:e-commerce \
           -Dsonar.host.url=http://localhost:9000 \
           -Dsonar.login=admin \
           -Dsonar.password=admin \
           -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
-          -Dsonar.junit.reportPaths=target/surefire-reports
+          -Dsonar.junit.reportPaths=target/surefire-reports \
+          -Dsonar.projectVersion=1.0-SNAPSHOT
         
         echo "Analysis completed. Waiting for metrics to be available..."
-        sleep 10
+        sleep 15
 
     - name: Fetch SonarQube Metrics and Comment PR
       run: |
@@ -150,6 +171,9 @@ jobs:
         echo ""
         echo "--- Code Coverage ---"
         COVERAGE_RESPONSE=$(curl -s $AUTH "$SONAR_URL/api/measures/component?metricKeys=coverage,line_coverage,branch_coverage&component=$PROJECT_KEY")
+        
+        echo "DEBUG: Coverage API Response:"
+        echo "$COVERAGE_RESPONSE" | jq '.'
 
         TOTAL_COVERAGE=$(echo "$COVERAGE_RESPONSE" | jq -r '.component.measures[]? | select(.metric=="coverage") | .value // empty' 2>/dev/null | head -1)
         LINE_COVERAGE=$(echo "$COVERAGE_RESPONSE" | jq -r '.component.measures[]? | select(.metric=="line_coverage") | .value // empty' 2>/dev/null | head -1)
